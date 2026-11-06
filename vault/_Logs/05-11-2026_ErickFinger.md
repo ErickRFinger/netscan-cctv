@@ -132,3 +132,14 @@ Ao clicar em "Buscar" (Atualizar) ou "Testar Ping", pequenas janelas pretas de t
    - Se a marca for desconhecida, dispara simultaneamente em todos os protocolos.
 2. **Recompilação e Validação:**
    - Binário standalone `dist/NETSCAN_CCTV.exe` e `%LOCALAPPDATA%\Programs\NETSCAN_CCTV\NETSCAN_CCTV.exe` atualizados com suporte completo a Hikvision e Uniview.
+
+## Sessão 21:22 — Publicação no GitHub e Disponibilização do Release v1.0.0
+
+### O que foi feito
+1. **Criação do Repositório Git e GitHub:**
+   - Inicializado repositório em `NETSCAN_CCTV/`.
+   - Adicionado `.gitignore` limpo para evitar arquivos de cache.
+   - Criado repositório público oficial no GitHub: `https://github.com/ErickRFinger/netscan-cctv`.
+2. **Publicação da Release Oficial:**
+   - Criada release `v1.0.0` com upload do binário standalone `NETSCAN_CCTV.exe` (16.7 MB).
+   - Link direto de download público testado com `StatusCode: 200`: `https://github.com/ErickRFinger/netscan-cctv/releases/download/v1.0.0/NETSCAN_CCTV.exe`.
