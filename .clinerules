@@ -1,0 +1,15 @@
+# Diretriz Obrigatória de Memória: VAULT-STANDARD (Modelo Obsidian)
+
+Este repositório possui documentação estruturada no padrão Obsidian em `vault/`.
+
+## 1. Antes de Modificar Código (Ordem Obrigatória de Leitura):
+1. `vault/_Index.md` — mapa-mestre
+2. `vault/01_Modulos/_Overview.md`
+3. Notas atômicas específicas do que vai alterar
+4. `vault/00_Core/` para protocolos ou arquitetura
+5. Logs recentes em `vault/_Logs/`
+
+## 2. Ao Finalizar Sessões com Alterações:
+- Criar/atualizar log em `vault/_Logs/DD-MM-AAAA_<git_user_name>.md`.
+- Atualizar notas das unidades afetadas.
+- Manter notas atômicas (< 80 linhas) com frontmatter YAML e `[[wikilinks]]`.

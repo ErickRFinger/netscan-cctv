@@ -1,0 +1,12 @@
+# PyInstaller build artifacts
+build/
+*.spec
+__pycache__/
+*.pyc
+
+# Local logs
+*.log
+crash.log
+
+# VSCode / IDE
+.vscode/

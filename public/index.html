@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NETSCAN CCTV PRO — SADP & EZTools Suite</title>
+  <script src="/static/tailwind.js"></script>
+  <script src="/static/fontawesome.js" defer></script>
+  <script src="/static/qrcode.js" defer></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg-dark: #080a0f;
+      --panel-bg: rgba(14, 18, 28, 0.85);
+      --border-color: #1f2738;
+      --accent-cyan: #00f2fe;
+      --accent-blue: #3b82f6;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.03) 0px, transparent 40%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.03) 0px, transparent 40%);
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      letter-spacing: -0.01em;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .glass-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+    }
+
+    .glass-card {
+      background: rgba(19, 25, 40, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .btn-gradient {
+      background: linear-gradient(135deg, #00f2fe 0%, #0284c7 100%);
+      color: #030712;
+      font-weight: 700;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-gradient:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.45);
+      transform: translateY(-1px);
+    }
+    .btn-gradient:active {
+      transform: translateY(0);
+    }
+
+    /* Tabela Estilo SADP de Alta Densidade */
+    .sadp-table th {
+      position: sticky;
+      top: 0;
+      background: #0d111a;
+      z-index: 10;
+      white-space: nowrap;
+      padding: 10px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+      border-bottom: 1px solid #1f2738;
+    }
+
+    .sadp-table td {
+      white-space: nowrap;
+      padding: 9px 14px;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(31, 39, 56, 0.5);
+    }
+
+    .sadp-table tr:hover {
+      background: rgba(30, 41, 59, 0.45);
+    }
+
+    .sadp-table tr.selected {
+      background: rgba(0, 242, 254, 0.1) !important;
+      border-left: 3px solid #00f2fe;
+    }
+
+    /* Pulso para Câmeras Inativas */
+    @keyframes pulse-amber {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.96); }
+    }
+    .pulse-amber {
+      animation: pulse-amber 2s infinite ease-in-out;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080a0f; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="flex flex-col h-screen select-none">
+
+  <!-- ================= TOP TOOLBAR (SADP & EZTOOLS UNIFICADA) ================= -->
+  <header class="glass-panel px-5 py-3 border-b border-slate-800 flex items-center justify-between gap-4 flex-shrink-0 z-30">
+    
+    <!-- Esquerda: Logo + Título -->
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-cyan-500/20 text-base">
+        <i class="fa-solid fa-camera-viewfinder"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-base font-extrabold tracking-tight text-white">NETSCAN <span class="text-cyan-400">CCTV</span></span>
+          <span class="text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 tracking-wider">SADP & EZTools Pro</span>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium">Hikvision · Uniview · Intelbras · ONVIF</p>
+      </div>
+    </div>
+
+    <!-- Centro: Seletor de Interface de Rede + Status de Conexão -->
+    <div class="flex items-center gap-2 flex-1 max-w-md">
+      <div class="relative w-full">
+        <i class="fa-solid fa-network-wired absolute left-3 top-2.5 text-xs text-cyan-400"></i>
+        <select id="interfaceSelect" onchange="triggerScan()" class="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-8 pr-8 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500 transition">
+          <option value="">Carregando placas de rede...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Direita: Botões de Ação Principal -->
+    <div class="flex items-center gap-2">
+      
+      <!-- Botão Demo -->
+      <button onclick="loadDemoDevices()" title="Carregar 4 câmeras de demonstração" class="glass-card hover:bg-slate-800 text-cyan-300 px-3 py-1.5 rounded-xl border border-cyan-900/60 text-xs font-bold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i>
+        <span>Modo Demo</span>
+      </button>
+
+      <!-- Botão Atualizar / Scan -->
+      <button id="btnScan" onclick="triggerScan()" class="btn-gradient px-4 py-1.5 rounded-xl text-xs flex items-center gap-2">
+        <i id="scanIcon" class="fa-solid fa-rotate text-xs"></i>
+        <span id="scanText">Atualizar (F5)</span>
+      </button>
+
+      <!-- Sequenciador em Lote -->
+      <button onclick="openBatchModal()" class="glass-card hover:bg-slate-800 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-700/80 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-list-ol text-cyan-400"></i>
+        <span class="hidden sm:inline">Lote de IPs</span>
+      </button>
+
+      <!-- Exportar CSV -->
+      <button onclick="openReportModal()" title="Exportar Lista de Câmeras" class="glass-card hover:bg-slate-800 text-slate-300 p-2 rounded-xl border border-slate-700/80 text-xs transition">
+        <i class="fa-solid fa-file-export text-slate-300"></i>
+      </button>
+
+      <!-- QR Code Celular -->
+      <button onclick="openQrModal()" title="Abrir no iPhone / Android" class="glass-card hover:bg-slate-800 text-slate-300 p-2 rounded-xl border border-slate-700/80 text-xs transition">
+        <i class="fa-solid fa-qrcode text-cyan-400"></i>
+      </button>
+
+    </div>
+
+  </header>
+
+  <!-- ================= SUB-BARRA DE ESTATÍSTICAS E FILTROS ================= -->
+  <div class="bg-slate-950/70 border-b border-slate-800 px-5 py-2 flex items-center justify-between text-xs flex-shrink-0">
+    
+    <!-- Filtros de Fabricante (Pills) -->
+    <div class="flex items-center gap-1.5">
+      <button onclick="setFilter('all')" class="filter-pill px-3 py-1 rounded-lg text-xs font-bold bg-slate-800 text-cyan-300 border border-slate-700 transition" data-filter="all">
+        Todas (<span id="cntAll">0</span>)
+      </button>
+      <button onclick="setFilter('hikvision')" class="filter-pill px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition" data-filter="hikvision">
+        Hikvision (<span id="cntHik">0</span>)
+      </button>
+      <button onclick="setFilter('uniview')" class="filter-pill px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition" data-filter="uniview">
+        Uniview (<span id="cntUnv">0</span>)
+      </button>
+      <button onclick="setFilter('intelbras')" class="filter-pill px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition" data-filter="intelbras">
+        Intelbras (<span id="cntIntel">0</span>)
+      </button>
+      <button onclick="setFilter('inactive')" class="filter-pill px-3 py-1 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-950/40 transition" data-filter="inactive">
+        Inativas (<span id="cntInact">0</span>)
+      </button>
+    </div>
+
+    <!-- Campo de Busca em Tempo Real -->
+    <div class="relative w-64">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-2 text-[10px] text-slate-500"></i>
+      <input type="text" id="searchBox" oninput="renderDevices()" placeholder="Filtrar por IP, MAC ou modelo..." class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-7 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-medium">
+    </div>
+
+  </div>
+
+  <!-- ================= LAYOUT SPLIT (SADP STYLE: TABELA À ESQUERDA + PAINEL À DIREITA) ================= -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- LADO ESQUERDO: TABELA RICA DE CÂMERAS (SADP / EZTOOLS GRID) -->
+    <div class="flex-1 overflow-auto bg-slate-950/30 flex flex-col">
+      
+      <!-- Alerta de Conflito de IP -->
+      <div id="ipConflictBanner" class="hidden bg-red-950/90 border-b border-red-700 px-4 py-2 text-xs text-red-200 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+          <span><strong>Conflito de IP:</strong> Duas ou mais câmeras no mesmo IP (<span id="conflictIpList" class="font-mono font-bold text-white underline"></span>).</span>
+        </div>
+        <button onclick="openBatchModal()" class="bg-red-600 hover:bg-red-500 text-white px-2.5 py-0.5 rounded text-[11px] font-bold">
+          Sequenciar IPs
+        </button>
+      </div>
+
+      <!-- Tabela -->
+      <table class="w-full text-left sadp-table">
+        <thead>
+          <tr>
+            <th class="w-10 text-center">
+              <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" class="rounded bg-slate-900 border-slate-700 text-cyan-500 w-3.5 h-3.5">
+            </th>
+            <th class="w-12 text-center">No.</th>
+            <th>Fabricante & Modelo</th>
+            <th>Status</th>
+            <th>Endereço IPv4</th>
+            <th>Porta</th>
+            <th>Máscara de Rede</th>
+            <th>Gateway</th>
+            <th>Endereço MAC</th>
+            <th>Número de Série</th>
+            <th>Versão de Software</th>
+            <th>DHCP</th>
+          </tr>
+        </thead>
+        <tbody id="deviceTableBody" class="font-mono">
+          <!-- Populado via JS -->
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 text-2xl mb-3 shadow-inner">
+          <i class="fa-solid fa-radar"></i>
+        </div>
+        <h3 class="text-sm font-bold text-white mb-1">Nenhuma Câmera Localizada</h3>
+        <p class="text-xs text-slate-500 max-w-sm mb-4">
+          Espete o cabo no switch das câmeras e clique em Atualizar, ou teste com o Modo Demo.
+        </p>
+        <button onclick="loadDemoDevices()" class="btn-gradient px-4 py-2 rounded-xl text-xs font-bold">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Carregar Demonstração
+        </button>
+      </div>
+
+    </div>
+
+    <!-- LADO DIREITO: O PAINEL DE INSPEÇÃO CLÁSSICO DO SADP / EZTOOLS -->
+    <aside class="w-96 glass-panel border-l border-slate-800 p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0 z-20">
+      
+      <div>
+        
+        <!-- Cabeçalho do Painel do Dispositivo -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-cyan-400"></i> Painel de Configuração
+          </h2>
+          <span id="sideBrandBadge" class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-800 text-slate-400">SADP</span>
+        </div>
+
+        <!-- Card de Resumo do Aparelho Selecionado -->
+        <div id="sideEmptyPrompt" class="text-center py-12 text-slate-500 text-xs">
+          <i class="fa-solid fa-hand-pointer text-2xl mb-2 text-slate-600 block"></i>
+          Selecione uma câmera na lista para editar parâmetros de rede ou ativá-la.
+        </div>
+
+        <div id="sideDeviceDetails" class="hidden space-y-4 text-xs">
+          
+          <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <h3 id="sideModel" class="font-extrabold text-white text-xs truncate max-w-[240px]">-</h3>
+              <div id="sideStatusBadge">-</div>
+            </div>
+            <div class="text-[11px] font-mono text-slate-400 flex items-center justify-between mt-2 pt-2 border-t border-slate-900">
+              <span class="text-slate-500">MAC:</span>
+              <span id="sideMac" class="text-slate-200 font-semibold select-all">-</span>
+            </div>
+            <div class="text-[11px] font-mono text-slate-400 flex items-center justify-between mt-1">
+              <span class="text-slate-500">Serial:</span>
+              <span id="sideSerial" class="text-slate-200 truncate max-w-[200px] select-all">-</span>
+            </div>
+          </div>
+
+          <!-- BLOCO 1: ATIVAÇÃO (Se a câmera for inativa) -->
+          <div id="sideActivationBlock" class="hidden bg-amber-950/40 p-4 rounded-2xl border border-amber-600/70 space-y-3">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-xs">
+              <i class="fa-solid fa-key"></i> Ativação de Câmera Nova
+            </div>
+            <p class="text-[11px] text-slate-300">Defina a senha inicial de administrador:</p>
+            <input type="password" id="sideActPassword" placeholder="Nova senha (min. 8 dígitos)" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:border-amber-400 focus:outline-none">
+            <button onclick="submitSideActivate()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition shadow-md shadow-amber-500/20">
+              Ativar Câmera
+            </button>
+          </div>
+
+          <!-- BLOCO 2: ALTERAÇÃO DE IP (Modificar Parâmetros de Rede - SADP Standard) -->
+          <div id="sideModifyBlock" class="space-y-3 bg-slate-950/50 p-3.5 rounded-2xl border border-slate-800">
+            <div class="flex items-center justify-between pb-1 border-b border-slate-900">
+              <span class="font-bold text-slate-200 text-xs">Parâmetros de Rede</span>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer">
+                <input type="checkbox" id="sideDhcp" onchange="toggleSideDhcp(this)" class="rounded bg-slate-900 border-slate-700 text-cyan-500">
+                <span>DHCP</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Endereço IPv4</label>
+                <input type="text" id="sideIp" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Porta</label>
+                <input type="number" id="sidePort" value="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Máscara de Sub-rede</label>
+              <input type="text" id="sideMask" value="255.255.255.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="text-slate-400 text-[10px] uppercase font-bold block mb-1">Gateway Padrão</label>
+              <input type="text" id="sideGateway" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+            </div>
+
+            <div class="pt-1">
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-amber-400 text-[10px] uppercase font-bold">Senha de Administrador</label>
+                <button type="button" onclick="useDefaultPassword('sidePassword')" class="text-[10px] text-cyan-400 hover:underline">Usar Salva</button>
+              </div>
+              <input type="password" id="sidePassword" placeholder="Senha da câmera" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl p-2 text-white text-xs focus:border-amber-400 focus:outline-none">
+            </div>
+
+            <button onclick="submitSideModify()" class="w-full btn-gradient py-2 rounded-xl text-xs font-bold mt-2 shadow-md">
+              <i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Alterações
+            </button>
+          </div>
+
+          <!-- Ações Rápidas -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="testSidePing()" class="glass-card hover:bg-slate-800 text-slate-300 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-bolt text-cyan-400"></i> Testar Ping
+            </button>
+            <a id="sideWebBtn" href="#" target="_blank" class="glass-card hover:bg-slate-800 text-slate-300 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-arrow-up-right-from-square text-cyan-400"></i> Abrir Web
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Rodapé do Painel Lateral -->
+      <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between items-center">
+        <span>Porta Local: <strong class="text-slate-300">37021</strong></span>
+        <button onclick="openConfigModal()" class="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1">
+          <i class="fa-solid fa-key"></i> Senha Padrão
+        </button>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- ================= MODAL: SEQUENCIAMENTO EM LOTE ================= -->
+  <div id="modalBatch" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg p-6 rounded-3xl border border-cyan-500/50 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+          <i class="fa-solid fa-list-ol"></i> Sequenciamento de IPs em Lote
+        </h3>
+        <button onclick="closeModal('modalBatch')" class="text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-4">
+        As <strong id="batchTotalCount" class="text-cyan-300 font-bold">0</strong> câmeras selecionadas receberão novos IPs sequenciais:
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-300 font-semibold block mb-1">IP Inicial da Sequência</label>
+            <input type="text" id="batchStartIp" value="192.168.1.100" oninput="updateBatchPreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-slate-300 font-semibold block mb-1">Máscara de Rede</label>
+            <input type="text" id="batchMask" value="255.255.255.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-300 font-semibold block mb-1">Gateway</label>
+          <input type="text" id="batchGateway" value="192.168.1.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-xs focus:border-cyan-500 focus:outline-none">
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-amber-400 font-bold">Senha de Administrador para Aplicar</label>
+            <button type="button" onclick="useDefaultPassword('batchPassword')" class="text-[10px] text-cyan-400 hover:underline">Usar Senha Salva</button>
+          </div>
+          <input type="password" id="batchPassword" placeholder="Senha mestre" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl p-2.5 text-white text-xs focus:border-amber-400 focus:outline-none">
+        </div>
+
+        <div>
+          <span class="text-[11px] text-slate-400 font-semibold block mb-1">Pré-visualização:</span>
+          <div id="batchPreviewBox" class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 max-h-32 overflow-y-auto font-mono text-[11px] text-slate-300 space-y-1">
+            <!-- Gerado via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end gap-2">
+        <button onclick="closeModal('modalBatch')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs">Cancelar</button>
+        <button onclick="submitBatch()" class="btn-gradient px-5 py-2 rounded-xl text-xs font-bold">Aplicar em Todas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: RELATÓRIO DA OBRA ================= -->
+  <div id="modalReport" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg p-6 rounded-3xl border border-slate-700 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-file-invoice text-cyan-400"></i> Relatório de Instalação (OS)
+        </h3>
+        <button onclick="closeModal('modalReport')" class="text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <textarea id="reportTextarea" rows="8" readonly class="w-full bg-slate-950 p-3 rounded-2xl border border-slate-800 font-mono text-[11px] text-slate-300 select-all leading-relaxed"></textarea>
+
+      <div class="mt-4 flex justify-between items-center gap-2">
+        <button onclick="downloadReportCsv()" class="glass-card hover:bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-file-csv text-cyan-400"></i> Baixar CSV
+        </button>
+        <button onclick="copyReportToClipboard()" id="btnCopyReport" class="btn-gradient px-4 py-2 rounded-xl text-xs font-bold">
+          <i class="fa-solid fa-copy mr-1"></i> Copiar Texto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SENHA PADRÃO ================= -->
+  <div id="modalConfig" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-sm p-6 rounded-3xl border border-slate-700 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-key text-amber-400"></i> Senha Padrão de Campo
+        </h3>
+        <button onclick="closeModal('modalConfig')" class="text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-3">
+        Defina a senha padrão da sua empresa para preenchimento em 1 clique:
+      </p>
+
+      <input type="password" id="cfgDefaultPassword" placeholder="Ex: Cftv@2026" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:border-cyan-500 focus:outline-none mb-4">
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modalConfig')" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs">Fechar</button>
+        <button onclick="saveDefaultPassword()" class="btn-gradient px-4 py-1.5 rounded-xl text-xs font-bold">Salvar Senha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: QR CODE IPHONE / ANDROID ================= -->
+  <div id="modalQr" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-sm p-7 rounded-3xl border border-cyan-800 text-center shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-mobile-screen-button text-cyan-400"></i> Abrir no Celular
+        </h3>
+        <button onclick="closeModal('modalQr')" class="text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-4">
+        Conecte seu iPhone ou Android no mesmo Wi-Fi deste notebook e aponte a câmera pro QR Code:
+      </p>
+
+      <div class="bg-white p-3 rounded-2xl inline-block shadow-2xl mx-auto mb-3">
+        <div id="qrContainer" class="w-44 h-44 rounded-lg flex items-center justify-center"></div>
+      </div>
+
+      <div id="mobileUrlText" class="font-mono text-xs text-cyan-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800 break-all select-all font-semibold">
+        http://...
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFICATION FLUTUANTE ================= -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300">
+    <div class="glass-panel px-4 py-2.5 rounded-xl border border-cyan-500/40 text-xs text-cyan-200 shadow-2xl flex items-center gap-2">
+      <i id="toastIcon" class="fa-solid fa-check text-cyan-400"></i>
+      <span id="toastMsg" class="font-semibold">Ação concluída</span>
+    </div>
+  </div>
+
+  <!-- ================= LÓGICA JAVASCRIPT ================= -->
+  <script>
+    let devices = [];
+    let selectedDevices = new Set();
+    let currentFilter = 'all';
+    let targetDevice = null;
+    let interfaces = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadInterfaces();
+      setTimeout(triggerScan, 300);
+    });
+
+    function showToast(msg, icon = "fa-check") {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastMsg").textContent = msg;
+      document.getElementById("toastIcon").className = `fa-solid ${icon} text-cyan-400`;
+      toast.classList.remove("opacity-0", "translate-y-3");
+      toast.classList.add("opacity-100", "translate-y-0");
+      setTimeout(() => {
+        toast.classList.remove("opacity-100", "translate-y-0");
+        toast.classList.add("opacity-0", "translate-y-3");
+      }, 2500);
+    }
+
+    async function loadInterfaces() {
+      try {
+        const res = await fetch("/api/interfaces");
+        const data = await res.json();
+        interfaces = data.interfaces || [];
+        const sel = document.getElementById("interfaceSelect");
+        sel.innerHTML = '<option value="">Todas as Placas de Rede</option>';
+        
+        interfaces.forEach(iface => {
+          const opt = document.createElement("option");
+          opt.value = iface.ip;
+          opt.textContent = `${iface.name} (${iface.ip})`;
+          if (iface.name.toLowerCase().includes("ethernet") && !sel.value) {
+            opt.selected = true;
+          }
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function triggerScan() {
+      const btn = document.getElementById("btnScan");
+      const icon = document.getElementById("scanIcon");
+      const text = document.getElementById("scanText");
+      const selIface = document.getElementById("interfaceSelect").value;
+
+      btn.disabled = true;
+      icon.className = "fa-solid fa-rotate fa-spin text-xs";
+      text.textContent = "Buscando...";
+
+      try {
+        const res = await fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ interface_ip: selIface, timeout: 2.2 })
+        });
+        const data = await res.json();
+        devices = data.devices || [];
+        updateStats();
+        checkIpConflicts();
+        renderDevices();
+        if (devices.length > 0) {
+          showToast(`${devices.length} câmera(s) localizada(s)!`);
+          selectRow(devices[0].id);
+        }
+      } catch (e) {
+        showToast("Erro na varredura", "fa-triangle-exclamation");
+      } finally {
+        btn.disabled = false;
+        icon.className = "fa-solid fa-rotate text-xs";
+        text.textContent = "Atualizar (F5)";
+      }
+    }
+
+    async function loadDemoDevices() {
+      try {
+        const res = await fetch("/api/demo", { method: "POST" });
+        const data = await res.json();
+        devices = data.devices || [];
+        updateStats();
+        checkIpConflicts();
+        renderDevices();
+        showToast("Câmeras Demo Carregadas!", "fa-wand-magic-sparkles");
+        if (devices.length > 0) selectRow(devices[0].id);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function updateStats() {
+      const total = devices.length;
+      const hik = devices.filter(d => d.brand.toLowerCase().includes("hikvision")).length;
+      const unv = devices.filter(d => d.brand.toLowerCase().includes("uniview")).length;
+      const intel = devices.filter(d => d.brand.toLowerCase().includes("intelbras") || d.brand.toLowerCase().includes("dahua")).length;
+      const inact = devices.filter(d => !d.activated).length;
+
+      document.getElementById("cntAll").textContent = total;
+      document.getElementById("cntHik").textContent = hik;
+      document.getElementById("cntUnv").textContent = unv;
+      document.getElementById("cntIntel").textContent = intel;
+      document.getElementById("cntInact").textContent = inact;
+    }
+
+    function checkIpConflicts() {
+      const ipCounts = {};
+      devices.forEach(d => { if (d.ip) ipCounts[d.ip] = (ipCounts[d.ip] || 0) + 1; });
+      const conflicts = Object.keys(ipCounts).filter(ip => ipCounts[ip] > 1);
+      const banner = document.getElementById("ipConflictBanner");
+      if (conflicts.length > 0) {
+        document.getElementById("conflictIpList").textContent = conflicts.join(", ");
+        banner.classList.remove("hidden");
+      } else {
+        banner.classList.add("hidden");
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll(".filter-pill").forEach(p => {
+        p.classList.remove("bg-slate-800", "text-cyan-300", "border-slate-700");
+        p.classList.add("text-slate-400");
+      });
+      const activePill = document.querySelector(`.filter-pill[data-filter="${filter}"]`);
+      if (activePill) {
+        activePill.classList.add("bg-slate-800", "text-cyan-300", "border-slate-700");
+        activePill.classList.remove("text-slate-400");
+      }
+      renderDevices();
+    }
+
+    function renderDevices() {
+      const tbody = document.getElementById("deviceTableBody");
+      const emptyState = document.getElementById("emptyState");
+      const search = document.getElementById("searchBox").value.trim().toLowerCase();
+
+      let filtered = devices.filter(d => {
+        const matchSearch = (d.ip || '').toLowerCase().includes(search) ||
+                            (d.mac || '').toLowerCase().includes(search) ||
+                            (d.model || '').toLowerCase().includes(search) ||
+                            (d.serial || '').toLowerCase().includes(search) ||
+                            (d.brand || '').toLowerCase().includes(search);
+        if (!matchSearch) return false;
+
+        if (currentFilter === 'hikvision') return d.brand.toLowerCase().includes('hikvision');
+        if (currentFilter === 'uniview') return d.brand.toLowerCase().includes('uniview');
+        if (currentFilter === 'intelbras') return d.brand.toLowerCase().includes('intelbras') || d.brand.toLowerCase().includes('dahua');
+        if (currentFilter === 'inactive') return !d.activated;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+
+      tbody.innerHTML = filtered.map((d, idx) => {
+        const isHik = d.brand.toLowerCase().includes("hikvision");
+        const isUnv = d.brand.toLowerCase().includes("uniview");
+        const isIntel = d.brand.toLowerCase().includes("intelbras") || d.brand.toLowerCase().includes("dahua");
+
+        const brandTag = isHik 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-950/80 text-red-400 border border-red-800/80">HIKVISION</span>`
+          : isUnv
+            ? `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-950/80 text-blue-400 border border-blue-800/80">UNIVIEW</span>`
+            : isIntel
+              ? `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">INTELBRAS</span>`
+              : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">${d.brand}</span>`;
+
+        const statusTag = d.activated
+          ? `<span class="text-emerald-400 font-bold text-xs"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Ativa</span>`
+          : `<span class="text-amber-300 font-extrabold bg-amber-950 px-2 py-0.5 rounded border border-amber-600 pulse-amber text-[10px]"><i class="fa-solid fa-triangle-exclamation mr-1"></i>INATIVA</span>`;
+
+        const isChecked = selectedDevices.has(d.id);
+        const isCurrentSelected = targetDevice && targetDevice.id === d.id;
+
+        return `
+          <tr onclick="selectRow('${d.id}')" ondblclick="openWebGui('${d.ip}', ${d.port})" class="cursor-pointer transition ${isCurrentSelected ? 'selected' : ''}">
+            <td class="text-center" onclick="event.stopPropagation()">
+              <input type="checkbox" onchange="toggleSelect('${d.id}')" ${isChecked ? 'checked' : ''} class="rounded bg-slate-900 border-slate-700 text-cyan-500 w-3.5 h-3.5 cursor-pointer">
+            </td>
+            <td class="text-center text-slate-500">${idx + 1}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                ${brandTag}
+                <span class="font-bold text-white font-sans">${d.model}</span>
+              </div>
+            </td>
+            <td class="text-center">${statusTag}</td>
+            <td class="text-cyan-400 font-extrabold font-mono">${d.ip}</td>
+            <td class="text-slate-400">${d.port}</td>
+            <td class="text-slate-300">${d.mask}</td>
+            <td class="text-slate-400">${d.gateway || '-'}</td>
+            <td class="text-slate-300 font-semibold">${d.mac}</td>
+            <td class="text-slate-400 truncate max-w-[150px]">${d.serial || '-'}</td>
+            <td class="text-slate-400">${d.version || '-'}</td>
+            <td class="text-center text-slate-400">${d.dhcp ? '<span class="text-cyan-400 font-bold">Sim</span>' : 'Não'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Selecionar Linha e Carregar no Painel Lateral (SADP Flow)
+    function selectRow(id) {
+      targetDevice = devices.find(d => d.id === id);
+      if (!targetDevice) return;
+
+      document.getElementById("sideEmptyPrompt").classList.add("hidden");
+      document.getElementById("sideDeviceDetails").classList.remove("hidden");
+
+      document.getElementById("sideModel").textContent = targetDevice.model;
+      document.getElementById("sideMac").textContent = targetDevice.mac;
+      document.getElementById("sideSerial").textContent = targetDevice.serial || '-';
+
+      const isHik = targetDevice.brand.toLowerCase().includes("hikvision");
+      const isUnv = targetDevice.brand.toLowerCase().includes("uniview");
+      document.getElementById("sideBrandBadge").textContent = isHik ? "HIKVISION SADP" : isUnv ? "UNIVIEW EZTOOLS" : targetDevice.brand;
+
+      // Status
+      const stContainer = document.getElementById("sideStatusBadge");
+      if (targetDevice.activated) {
+        stContainer.innerHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Ativa</span>`;
+        document.getElementById("sideActivationBlock").classList.add("hidden");
+      } else {
+        stContainer.innerHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-600 pulse-amber">INATIVA</span>`;
+        document.getElementById("sideActivationBlock").classList.remove("hidden");
+      }
+
+      // Parâmetros de Rede
+      document.getElementById("sideIp").value = targetDevice.ip;
+      document.getElementById("sidePort").value = targetDevice.port || 80;
+      document.getElementById("sideMask").value = targetDevice.mask || "255.255.255.0";
+      document.getElementById("sideGateway").value = targetDevice.gateway || "";
+      document.getElementById("sideDhcp").checked = targetDevice.dhcp || false;
+      document.getElementById("sidePassword").value = localStorage.getItem("cctv_default_password") || "";
+
+      document.getElementById("sideWebBtn").href = `http://${targetDevice.ip}:${targetDevice.port}`;
+
+      // Re-renderiza para destacar a linha selecionada
+      renderDevices();
+    }
+
+    // Alterar Parâmetros via Painel Lateral
+    async function submitSideModify() {
+      if (!targetDevice) return;
+      const pwd = document.getElementById("sidePassword").value;
+      if (!pwd) {
+        alert("A senha de administrador da câmera é obrigatória!");
+        return;
+      }
+
+      const payload = {
+        serial: targetDevice.serial,
+        mac: targetDevice.mac,
+        brand: targetDevice.brand,
+        new_ip: document.getElementById("sideIp").value.trim(),
+        new_mask: document.getElementById("sideMask").value.trim(),
+        new_gateway: document.getElementById("sideGateway").value.trim(),
+        new_port: parseInt(document.getElementById("sidePort").value) || 80,
+        password: pwd,
+        dhcp: document.getElementById("sideDhcp").checked
+      };
+
+      try {
+        const res = await fetch("/api/devices/modify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`IP alterado para ${payload.new_ip}!`);
+          targetDevice.ip = payload.new_ip;
+          targetDevice.mask = payload.new_mask;
+          targetDevice.gateway = payload.new_gateway;
+          targetDevice.port = payload.new_port;
+          targetDevice.dhcp = payload.dhcp;
+          renderDevices();
+          setTimeout(triggerScan, 2000);
+        } else {
+          alert("Falha: " + (data.error || "Erro"));
+        }
+      } catch (e) {
+        alert("Erro na requisição: " + e.message);
+      }
+    }
+
+    // Ativar Câmera via Painel Lateral
+    async function submitSideActivate() {
+      if (!targetDevice) return;
+      const pwd = document.getElementById("sideActPassword").value;
+      if (!pwd || pwd.length < 8) {
+        alert("A nova senha deve ter no mínimo 8 caracteres.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/devices/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serial: targetDevice.serial,
+            mac: targetDevice.mac,
+            password: pwd
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Câmera ativada com sucesso!", "fa-circle-check");
+          targetDevice.activated = true;
+          selectRow(targetDevice.id);
+          setTimeout(triggerScan, 2500);
+        } else {
+          alert("Erro: " + (data.error || "Falha"));
+        }
+      } catch (e) {
+        alert("Erro: " + e.message);
+      }
+    }
+
+    async function testSidePing() {
+      if (!targetDevice) return;
+      showToast(`Testando ping para ${targetDevice.ip}...`, "fa-spinner fa-spin");
+      try {
+        const res = await fetch(`/api/ping?ip=${targetDevice.ip}`);
+        const data = await res.json();
+        if (data.reachable) {
+          showToast(`✅ ${targetDevice.ip} está online!`, "fa-circle-check");
+        } else {
+          showToast(`⚠️ ${targetDevice.ip} não respondeu ao ping`, "fa-triangle-exclamation");
+        }
+      } catch (e) {
+        showToast("Erro no teste de ping", "fa-xmark");
+      }
+    }
+
+    function openWebGui(ip, port) {
+      window.open(`http://${ip}:${port}`, '_blank');
+    }
+
+    function toggleSelect(id) {
+      if (selectedDevices.has(id)) selectedDevices.delete(id); else selectedDevices.add(id);
+    }
+
+    function toggleSelectAll(master) {
+      if (master.checked) devices.forEach(d => selectedDevices.add(d.id)); else selectedDevices.clear();
+      renderDevices();
+    }
+
+    // Modal de Lote
+    function openBatchModal() {
+      const selected = selectedDevices.size > 0 
+        ? devices.filter(d => selectedDevices.has(d.id))
+        : devices;
+
+      document.getElementById("batchTotalCount").textContent = selected.length;
+      document.getElementById("batchPassword").value = localStorage.getItem("cctv_default_password") || "";
+      
+      if (selected.length > 0 && selected[0].ip) {
+        const parts = selected[0].ip.split(".");
+        document.getElementById("batchStartIp").value = `${parts[0]}.${parts[1]}.${parts[2]}.100`;
+        document.getElementById("batchGateway").value = `${parts[0]}.${parts[1]}.${parts[2]}.1`;
+      }
+      
+      updateBatchPreview();
+      document.getElementById("modalBatch").classList.remove("hidden");
+    }
+
+    function updateBatchPreview() {
+      const startIp = document.getElementById("batchStartIp").value.trim();
+      const container = document.getElementById("batchPreviewBox");
+      const selected = selectedDevices.size > 0 
+        ? devices.filter(d => selectedDevices.has(d.id))
+        : devices;
+
+      try {
+        const parts = startIp.split(".").map(p => parseInt(p));
+        if (parts.length !== 4 || parts.some(isNaN)) {
+          container.innerHTML = '<span class="text-red-400">IP inicial inválido.</span>';
+          return;
+        }
+
+        container.innerHTML = selected.map((d, idx) => {
+          const newIp = `${parts[0]}.${parts[1]}.${parts[2]}.${parts[3] + idx}`;
+          return `
+            <div class="flex justify-between items-center py-0.5 border-b border-slate-900 last:border-0">
+              <span class="text-slate-400 truncate max-w-[200px]">${d.model}</span>
+              <span class="font-bold text-cyan-400">${newIp}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<span class="text-red-400">Erro no cálculo.</span>';
+      }
+    }
+
+    async function submitBatch() {
+      const pwd = document.getElementById("batchPassword").value;
+      if (!pwd) {
+        alert("A senha de administrador é obrigatória.");
+        return;
+      }
+      const selected = selectedDevices.size > 0 
+        ? devices.filter(d => selectedDevices.has(d.id))
+        : devices;
+
+      const payload = {
+        devices: selected,
+        start_ip: document.getElementById("batchStartIp").value.trim(),
+        mask: document.getElementById("batchMask").value.trim(),
+        gateway: document.getElementById("batchGateway").value.trim(),
+        password: pwd
+      };
+
+      try {
+        const res = await fetch("/api/devices/batch-ip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        showToast(`Sequenciamento concluído para ${data.results.length} câmeras!`);
+        closeModal("modalBatch");
+        setTimeout(triggerScan, 3000);
+      } catch (e) {
+        alert("Erro no lote: " + e.message);
+      }
+    }
+
+    function openReportModal() {
+      const dateStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
+      let report = `📋 RELATÓRIO TÉCNICO DE CÂMERAS — NETSCAN CCTV SUITE\n`;
+      report += `Data: ${dateStr}\n`;
+      report += `Total de Dispositivos: ${devices.length}\n`;
+      report += `====================================================\n\n`;
+
+      devices.forEach((d, idx) => {
+        report += `${idx + 1}. [${d.brand.toUpperCase()}] ${d.model}\n`;
+        report += `   IP: ${d.ip}:${d.port} | Máscara: ${d.mask}\n`;
+        report += `   Gateway: ${d.gateway || 'N/A'} | MAC: ${d.mac}\n`;
+        report += `   Serial: ${d.serial || 'N/A'} | Status: ${d.activated ? 'Ativa' : 'INATIVA (DE FÁBRICA)'}\n\n`;
+      });
+
+      document.getElementById("reportTextarea").value = report;
+      document.getElementById("modalReport").classList.remove("hidden");
+    }
+
+    function copyReportToClipboard() {
+      const t = document.getElementById("reportTextarea");
+      t.select();
+      navigator.clipboard.writeText(t.value);
+      showToast("Relatório copiado!");
+    }
+
+    function downloadReportCsv() {
+      let csv = "ID,Marca,Modelo,IP,Porta,Mascara,Gateway,MAC,Serial,Ativada\n";
+      devices.forEach(d => {
+        csv += `"${d.id}","${d.brand}","${d.model}","${d.ip}","${d.port}","${d.mask}","${d.gateway}","${d.mac}","${d.serial}","${d.activated}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cctv_devices_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function openConfigModal() {
+      document.getElementById("cfgDefaultPassword").value = localStorage.getItem("cctv_default_password") || "";
+      document.getElementById("modalConfig").classList.remove("hidden");
+    }
+
+    function saveDefaultPassword() {
+      const pwd = document.getElementById("cfgDefaultPassword").value;
+      localStorage.setItem("cctv_default_password", pwd);
+      showToast("Senha corporativa salva!");
+      closeModal("modalConfig");
+    }
+
+    function useDefaultPassword(inputId) {
+      const saved = localStorage.getItem("cctv_default_password");
+      if (saved) {
+        document.getElementById(inputId).value = saved;
+        showToast("Senha padrão inserida!");
+      } else {
+        openConfigModal();
+      }
+    }
+
+    function openQrModal() {
+      const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? (document.getElementById("interfaceSelect").value || window.location.hostname)
+        : window.location.hostname;
+      const port = window.location.port || '37021';
+      const fullUrl = `http://${host}:${port}`;
+
+      document.getElementById("mobileUrlText").textContent = fullUrl;
+      const qrBox = document.getElementById("qrContainer");
+      qrBox.innerHTML = "";
+      if (typeof QRCode !== "undefined") {
+        new QRCode(qrBox, {
+          text: fullUrl,
+          width: 176,
+          height: 176,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        qrBox.innerHTML = `<a href="${fullUrl}" target="_blank" class="text-[11px] text-cyan-600 font-bold underline">Abrir Link Direto</a>`;
+      }
+      document.getElementById("modalQr").classList.remove("hidden");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
