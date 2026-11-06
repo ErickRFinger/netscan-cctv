@@ -21,4 +21,8 @@ tags:
   - [[01_Modulos/hikvision|Módulo SADP (Hikvision)]].
   - [[01_Modulos/uniview|Módulo EZTools (Uniview)]].
   - [[01_Modulos/desktop_app|Módulo Desktop App & Instalador]].
-- [[_Logs/05-11-2026_ErickFinger|Logs de Sessão]]: Histórico auditável de alterações.
+- [[02_Guias/_Index|02_Guias]]: Guias práticos, onboarding e engenharia reversa.
+  - [[02_Guias/novo_ambiente|Guia de Configuração em Novo PC]].
+  - [[02_Guias/compilacao_distribuicao|Guia de Compilação do Executável]].
+  - [[02_Guias/engenharia_protocolos|Engenharia Reversa dos Protocolos CFTV]].
+- [[_Logs/05-11-2026_ErickFinger|Log 05/11/2026]] / [[_Logs/06-11-2026_ErickFinger|Log 06/11/2026]]: Histórico auditável de alterações.

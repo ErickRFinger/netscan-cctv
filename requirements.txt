@@ -1,0 +1,16 @@
+# NETSCAN CCTV PRO — Dependências de Desenvolvimento e Runtime
+# Instalar com: pip install -r requirements.txt
+
+# Servidor assíncrono e API REST
+aiohttp>=3.9.0
+
+# Interface nativa de janela desktop (Edge WebView2)
+pywebview>=5.0.0
+pythonnet>=3.0.0
+clr_loader>=0.2.6
+
+# Manipulação de imagens e geração de ícones .ico
+pillow>=10.0.0
+
+# Compilação de executável standalone
+pyinstaller>=6.0.0
